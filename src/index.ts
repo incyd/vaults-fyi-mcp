@@ -419,9 +419,19 @@ app.all('/mcp', async (req: Request, res: Response) => {
     return;
   }
 
-  // No session found — either a fresh client or the server restarted and the
-  // in-memory Map was wiped. Create a new server+transport for every such
-  // request so tool calls survive cold starts without requiring re-init.
+  // Stale session ID — server restarted and the in-memory Map was wiped.
+  // Per MCP spec §6.3, respond with 404 so the client knows to re-initialize.
+  if (sessionId) {
+    res.status(404).json({ error: 'Session expired. Please reconnect the MCP server.' });
+    return;
+  }
+
+  // New client — must send initialize first
+  if (!isInitializeRequest(req.body)) {
+    res.status(400).json({ error: 'Invalid request: expected initialize' });
+    return;
+  }
+
   const newSessionId = randomUUID();
   const transport = new StreamableHTTPServerTransport({
     sessionIdGenerator: () => newSessionId,
