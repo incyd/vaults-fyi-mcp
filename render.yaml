@@ -1,0 +1,12 @@
+services:
+  - type: web
+    name: vaults-fyi-mcp
+    runtime: docker
+    dockerfilePath: ./Dockerfile
+    plan: free
+    healthCheckPath: /health
+    envVars:
+      - key: VAULTS_API_KEY
+        sync: false
+      - key: DATABASE_URL
+        sync: false
