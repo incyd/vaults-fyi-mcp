@@ -411,19 +411,16 @@ app.get('/health', (_req, res) => {
 app.all('/mcp', async (req: Request, res: Response) => {
   const sessionId = req.headers['mcp-session-id'] as string | undefined;
 
-  // Reuse existing session
+  // Reuse existing in-process session
   if (sessionId && sessions.has(sessionId)) {
     const transport = sessions.get(sessionId)!;
     await transport.handleRequest(req, res, req.body);
     return;
   }
 
-  // New session — must be an initialize request
-  if (!isInitializeRequest(req.body)) {
-    res.status(400).json({ error: 'Invalid request: expected initialize' });
-    return;
-  }
-
+  // No session found — either a fresh client or the server restarted and the
+  // in-memory Map was wiped. Create a new server+transport for every such
+  // request so tool calls survive cold starts without requiring re-init.
   const newSessionId = randomUUID();
   const transport = new StreamableHTTPServerTransport({
     sessionIdGenerator: () => newSessionId,
