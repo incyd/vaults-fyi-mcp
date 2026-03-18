@@ -239,12 +239,13 @@ function createServer(): McpServer {
     'Get current benchmark yield rates for a network (e.g. risk-free ETH staking rate, USD lending rate). Useful for comparing vault APYs against baseline rates.',
     {
       network: z.string().describe('Network name e.g. "mainnet", "base"'),
+      code: z.enum(['usd', 'eth']).describe('Benchmark code: "usd" for USD lending rate, "eth" for ETH staking rate'),
     },
     async (args, extra) => {
       const sessionId = (extra as { sessionId?: string }).sessionId ?? 'unknown';
       const start = Date.now();
       try {
-        const data = await vaultsApi(`/v2/benchmarks/${args.network}`);
+        const data = await vaultsApi(`/v2/benchmarks/${args.network}`, { code: args.code });
         void logCall(sessionId, 'get_benchmarks', args, 200, Date.now() - start);
         return { content: [{ type: 'text' as const, text: fmt(data) }] };
       } catch (e) {
